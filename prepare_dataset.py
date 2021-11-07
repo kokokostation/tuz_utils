@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from tqdm import tqdm
 import numpy as np
@@ -44,7 +45,7 @@ def get_length(message):
     return len(message['text'])
 
 
-def prepare_dataset(logs_path, context_len=3, batch_size=100000):
+def prepare_dataset(logs_path, output_path, context_len=3, batch_size=100000):
     messages = []
 
     with open(logs_path) as infile:
@@ -72,5 +73,5 @@ def prepare_dataset(logs_path, context_len=3, batch_size=100000):
     np.random.shuffle(samples)
 
     for batch_num, index in enumerate(range(0, len(samples), batch_size)):
-        with open(f'/home/mikhail/tuz/data/plain_chain_dataset/pack_{batch_num}', 'w') as outfile:
+        with open(os.path.join(output_path, f'pack_{batch_num}'), 'w') as outfile:
             json.dump(samples[index:index + batch_size], outfile)

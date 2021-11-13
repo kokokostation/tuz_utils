@@ -109,6 +109,8 @@ def get_context_reply_with_links(messages, context_len=3):
 
 
 def write_dataset(samples, output_path, batch_size=100000):
+    np.random.shuffle(samples)
+
     for batch_num, index in tqdm(enumerate(range(0, len(samples), batch_size))):
         with open(os.path.join(output_path, f'pack_{batch_num}'), 'w') as outfile:
             json.dump(samples[index:index + batch_size], outfile)

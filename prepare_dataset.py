@@ -1,14 +1,13 @@
+import datetime as dt
 import json
 import os
 import re
-from tqdm import tqdm
-import numpy as np
-import datetime as dt
-import pytz
 from collections import Counter
 
+import numpy as np
+import pytz
 from dataset import reddit
-
+from tqdm import tqdm
 
 LINK_RE = re.compile('@(\d+)')
 SPACE_RE = re.compile(' +')
@@ -108,9 +107,21 @@ def get_context_reply_with_links(messages, context_len=3):
     return result
 
 
-def write_dataset(samples, output_path, batch_size=100000):
-    np.random.shuffle(samples)
+def prepare_dataset(samples):
+    prepared_samples = []
+    for sample in samples:
+        prepared_sample = [
+            {'body': m['text'], 'processed_body': reddit.convert(m['text']), 'author': m['user_id']}
+            for m in sample
+        ]
+        prepared_samples.append(prepared_sample)
 
+    np.random.shuffle(prepared_samples)
+
+    return prepared_samples
+
+
+def write_dataset(samples, output_path, batch_size=100000):
     for batch_num, index in tqdm(enumerate(range(0, len(samples), batch_size))):
         with open(os.path.join(output_path, f'pack_{batch_num}'), 'w') as outfile:
             json.dump(samples[index:index + batch_size], outfile)

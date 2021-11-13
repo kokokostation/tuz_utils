@@ -66,14 +66,11 @@ def get_filtered_messages(logs_path):
 
 
 def get_context_reply_seq(messages, context_len=3):
-    samples = []
+    result = []
     for index in range(context_len + 1, len(messages)):
-        samples.append([
-            {'body': m['text'], 'processed_body': reddit.convert(m['text']), 'author': m['user_id']}
-            for m in messages[index - context_len - 1:index]
-        ])
+        result.append(messages[index - context_len - 1:index])
 
-    return samples
+    return result
 
 
 def dfs(messages, id_to_index, result, sample, context_len):

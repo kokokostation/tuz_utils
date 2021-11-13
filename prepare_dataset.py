@@ -45,7 +45,7 @@ def get_length(message):
     return len(message['text'])
 
 
-def prepare_dataset(logs_path, output_path, context_len=3, batch_size=100000):
+def get_filtered_messages(logs_path):
     messages = []
 
     with open(logs_path) as infile:
@@ -63,6 +63,10 @@ def prepare_dataset(logs_path, output_path, context_len=3, batch_size=100000):
     for message in messages:
         message['parent_ids'] = list(set(message['parent_ids']) & message_ids)
 
+    return messages
+
+
+def get_context_reply_seq(messages, context_len=3):
     samples = []
     for index in range(context_len + 1, len(messages)):
         samples.append([
@@ -70,8 +74,41 @@ def prepare_dataset(logs_path, output_path, context_len=3, batch_size=100000):
             for m in messages[index - context_len - 1:index]
         ])
 
-    np.random.shuffle(samples)
+    return samples
 
-    for batch_num, index in enumerate(range(0, len(samples), batch_size)):
+
+def dfs(messages, id_to_index, result, sample, context_len):
+    if len(sample) == context_len + 1:
+        result.append([messages[index] for index in reversed(sample)])
+
+        return
+
+    parent_ids = messages[sample[-1]]['parent_ids']
+    if parent_ids:
+        parent_inds = [id_to_index[id_] for id_ in parent_ids]
+    else:
+        parent_inds = [sample[-1] - 1]
+
+    for parent_index in parent_inds:
+        if parent_index < 0:
+            continue
+
+        sample.append(parent_index)
+        dfs(messages, id_to_index, result, sample, context_len)
+        sample.pop()
+
+
+def get_context_reply_with_links(messages, context_len=3):
+    id_to_index = {m['id']: index for index, m in enumerate(messages)}
+    result = []
+
+    for index, _ in tqdm(enumerate(messages)):
+        dfs(messages, id_to_index, result, [index], context_len)
+
+    return result
+
+
+def write_dataset(samples, output_path, batch_size=100000):
+    for batch_num, index in tqdm(enumerate(range(0, len(samples), batch_size))):
         with open(os.path.join(output_path, f'pack_{batch_num}'), 'w') as outfile:
             json.dump(samples[index:index + batch_size], outfile)
